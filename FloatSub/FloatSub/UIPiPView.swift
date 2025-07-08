@@ -170,11 +170,19 @@ open class UIPiPView: UIView,
     /// Note that the PiP image will not change unless this function is called.
     open func render() {
         /// Occasionally occurs in the background
-        if (pipBufferDisplayLayer.status == .failed) {
-            pipBufferDisplayLayer.flush()
+        if #available(iOS 18.0, *) {
+            if (pipBufferDisplayLayer.sampleBufferRenderer.status == .failed) {
+                pipBufferDisplayLayer.sampleBufferRenderer.flush()
+            }
+            guard let buffer = makeNextVieoBuffer() else { return }
+            pipBufferDisplayLayer.sampleBufferRenderer.enqueue(buffer)
+        } else {
+            if (pipBufferDisplayLayer.status == .failed) {
+                pipBufferDisplayLayer.flush()
+            }
+            guard let buffer = makeNextVieoBuffer() else { return }
+            pipBufferDisplayLayer.enqueue(buffer)
         }
-        guard let buffer = makeNextVieoBuffer() else { return }
-        pipBufferDisplayLayer.enqueue(buffer)
     }
 
     /// Call render periodically.

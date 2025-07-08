@@ -30,10 +30,17 @@ class AudioRecognitionManager: ObservableObject {
         }
     }
     
-    private func processAudioData(_ data: Data) {
-        logger.info("开始处理音频数据: \(data.count) bytes")
+    private func processAudioData(_ data: Data, isMic: Bool) {
+        logger.info("开始处理音频数据: \(data.count) bytes, isMic: \(isMic)")
         
-        guard let pcmBuffer = preprocessAudio(data: data) else {
+        let pcmBuffer: AVAudioPCMBuffer?
+        if isMic {
+            pcmBuffer = preprocessMicAudio(data: data)
+        } else {
+            pcmBuffer = preprocessAudio(data: data)
+        }
+        
+        guard let finalPcmBuffer = pcmBuffer else {
             logger.error("音频预处理失败")
             return
         }
@@ -62,7 +69,7 @@ class AudioRecognitionManager: ObservableObject {
             }
         }
         
-        recognitionRequest?.append(pcmBuffer)
+        recognitionRequest?.append(finalPcmBuffer)
         logger.debug("已添加音频数据到识别请求")
     }
     
@@ -111,6 +118,21 @@ class AudioRecognitionManager: ObservableObject {
         return pcmBuffer
     }
     
+    private func preprocessMicAudio(data: Data) -> AVAudioPCMBuffer? {
+        // 麦克风音频已经是单声道，但采样率是48000Hz，需要重采样到16000Hz（如果识别器需要）或保留48000Hz
+        // 这里我们先假设识别器可以处理48000Hz，直接创建buffer
+        let audioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 48000, channels: 1, interleaved: false)!
+        guard let pcmBuffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: UInt32(data.count / 2)) else {
+            return nil
+        }
+        pcmBuffer.frameLength = pcmBuffer.frameCapacity
+        data.withUnsafeBytes { ptr in
+            let int16Ptr = ptr.baseAddress!.assumingMemoryBound(to: Int16.self)
+            memcpy(pcmBuffer.int16ChannelData![0], int16Ptr, data.count)
+        }
+        return pcmBuffer
+    }
+    
     private func checkForNewAudioData() {
         guard let statusURL = containerURL?.appendingPathComponent("broadcastStatus.txt") else {
             logger.error("获取状态文件路径失败")
@@ -133,13 +155,23 @@ class AudioRecognitionManager: ObservableObject {
                 logger.debug("广播未开始或状态不是broadcasting")
                 return
             }
-            guard let audioURL = containerURL?.appendingPathComponent("latestAudio.data") else {
-                logger.error("获取共享音频文件路径失败")
-                return
+            
+            // 处理应用音频
+            if let audioURL = containerURL?.appendingPathComponent("latestAudio.data"),
+               let data = try? Data(contentsOf: audioURL) {
+                logger.info("成功读取应用音频数据: \(data.count) bytes")
+                processAudioData(data, isMic: false)
+                try? FileManager.default.removeItem(at: audioURL) // 处理后删除
             }
-            let data = try Data(contentsOf: audioURL)
-            logger.info("成功读取音频数据: \(data.count) bytes")
-            processAudioData(data)
+            
+            // 处理麦克风音频
+            if let micAudioURL = containerURL?.appendingPathComponent("latestMicAudio.data"),
+               let data = try? Data(contentsOf: micAudioURL) {
+                logger.info("成功读取麦克风音频数据: \(data.count) bytes")
+                processAudioData(data, isMic: true)
+                try? FileManager.default.removeItem(at: micAudioURL) // 处理后删除
+            }
+
         } catch let error as NSError {
             if error.domain == NSCocoaErrorDomain && error.code == NSFileReadNoSuchFileError {
                 // 文件不存在，这在广播启动前或结束后是正常情况
@@ -168,9 +200,14 @@ class AudioRecognitionManager: ObservableObject {
             try? FileManager.default.removeItem(at: statusURL)
         }
         
-        // 清理音频数据文件
+        // 清理应用音频数据文件
         if let audioURL = containerURL?.appendingPathComponent("latestAudio.data") {
             try? FileManager.default.removeItem(at: audioURL)
+        }
+        
+        // 清理麦克风音频数据文件
+        if let micAudioURL = containerURL?.appendingPathComponent("latestMicAudio.data") {
+            try? FileManager.default.removeItem(at: micAudioURL)
         }
 
         // 重置识别相关状态

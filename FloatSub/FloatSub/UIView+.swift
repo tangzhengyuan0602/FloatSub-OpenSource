@@ -27,7 +27,8 @@ public extension UIView {
     /// Make CMSampleBuffer from UIView
     /// https://soranoba.net/programming/uiview-to-cmsamplebuffer
     func makeSampleBuffer() -> CMSampleBuffer? {
-        let scale = UIScreen.main.scale
+        let scaleFactor: CGFloat = 0.8 // 增加这个值可以使字体变大，减小则变小
+        let scale = UIScreen.main.scale * scaleFactor
         let size = CGSize(
             width: (bounds.width * scale),
             height: (bounds.height * scale))
