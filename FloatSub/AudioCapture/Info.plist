@@ -11,5 +11,7 @@
 		<key>RPBroadcastProcessMode</key>
 		<string>RPBroadcastProcessModeSampleBuffer</string>
 	</dict>
+	<key>CFBundleDisplayName</key>
+	<string>浮窗字幕</string>
 </dict>
 </plist>

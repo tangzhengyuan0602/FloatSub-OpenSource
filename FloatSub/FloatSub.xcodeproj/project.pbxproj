@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		2B2132792E19318500AB9931 /* ReplayKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B2132782E19318500AB9931 /* ReplayKit.framework */; };
-		2B2132802E19318500AB9931 /* AudioCapture.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2B2132762E19318500AB9931 /* AudioCapture.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2B2132802E19318500AB9931 /* 浮窗字幕.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2B2132762E19318500AB9931 /* 浮窗字幕.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		72816AEB0899E675F7A382FC /* Pods_AudioCapture.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41E488C3F1779802C9E13E1E /* Pods_AudioCapture.framework */; };
+		F29586F9666B45FB704C71A6 /* Pods_FloatSub.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE1C2F379B4CD7A20AD4AC00 /* Pods_FloatSub.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,7 +30,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				2B2132802E19318500AB9931 /* AudioCapture.appex in Embed Foundation Extensions */,
+				2B2132802E19318500AB9931 /* 浮窗字幕.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -36,9 +38,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2172A3B1BA9709617B94065C /* Pods-FloatSub.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FloatSub.release.xcconfig"; path = "Target Support Files/Pods-FloatSub/Pods-FloatSub.release.xcconfig"; sourceTree = "<group>"; };
 		2B2132572E192E6900AB9931 /* FloatSub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FloatSub.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2B2132762E19318500AB9931 /* AudioCapture.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AudioCapture.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B2132762E19318500AB9931 /* 浮窗字幕.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "浮窗字幕.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B2132782E19318500AB9931 /* ReplayKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ReplayKit.framework; path = System/Library/Frameworks/ReplayKit.framework; sourceTree = SDKROOT; };
+		3A40DDE128D129C5B37F602E /* Pods-AudioCapture.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AudioCapture.debug.xcconfig"; path = "Target Support Files/Pods-AudioCapture/Pods-AudioCapture.debug.xcconfig"; sourceTree = "<group>"; };
+		41E488C3F1779802C9E13E1E /* Pods_AudioCapture.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AudioCapture.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE1C2F379B4CD7A20AD4AC00 /* Pods_FloatSub.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_FloatSub.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DC5CE6EF37EB97BD281E8D93 /* Pods-AudioCapture.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AudioCapture.release.xcconfig"; path = "Target Support Files/Pods-AudioCapture/Pods-AudioCapture.release.xcconfig"; sourceTree = "<group>"; };
+		E9191128192483E35BEE1463 /* Pods-FloatSub.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FloatSub.debug.xcconfig"; path = "Target Support Files/Pods-FloatSub/Pods-FloatSub.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -82,6 +90,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F29586F9666B45FB704C71A6 /* Pods_FloatSub.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +99,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B2132792E19318500AB9931 /* ReplayKit.framework in Frameworks */,
+				72816AEB0899E675F7A382FC /* Pods_AudioCapture.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +113,7 @@
 				2B21327A2E19318500AB9931 /* AudioCapture */,
 				2B2132772E19318500AB9931 /* Frameworks */,
 				2B2132582E192E6900AB9931 /* Products */,
+				910D9D824C0D0164D3B93012 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -110,7 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				2B2132572E192E6900AB9931 /* FloatSub.app */,
-				2B2132762E19318500AB9931 /* AudioCapture.appex */,
+				2B2132762E19318500AB9931 /* 浮窗字幕.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,8 +130,21 @@
 			isa = PBXGroup;
 			children = (
 				2B2132782E19318500AB9931 /* ReplayKit.framework */,
+				41E488C3F1779802C9E13E1E /* Pods_AudioCapture.framework */,
+				AE1C2F379B4CD7A20AD4AC00 /* Pods_FloatSub.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		910D9D824C0D0164D3B93012 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				3A40DDE128D129C5B37F602E /* Pods-AudioCapture.debug.xcconfig */,
+				DC5CE6EF37EB97BD281E8D93 /* Pods-AudioCapture.release.xcconfig */,
+				E9191128192483E35BEE1463 /* Pods-FloatSub.debug.xcconfig */,
+				2172A3B1BA9709617B94065C /* Pods-FloatSub.release.xcconfig */,
+			);
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -130,10 +154,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2B2132622E192E6A00AB9931 /* Build configuration list for PBXNativeTarget "FloatSub" */;
 			buildPhases = (
+				E74FE086CEBAB07E824FACD8 /* [CP] Check Pods Manifest.lock */,
 				2B2132532E192E6900AB9931 /* Sources */,
 				2B2132542E192E6900AB9931 /* Frameworks */,
 				2B2132552E192E6900AB9931 /* Resources */,
 				2B2132852E19318500AB9931 /* Embed Foundation Extensions */,
+				125268472F940D9B2F34A978 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -144,8 +170,6 @@
 				2B2132592E192E6900AB9931 /* FloatSub */,
 			);
 			name = FloatSub;
-			packageProductDependencies = (
-			);
 			productName = FloatSub;
 			productReference = 2B2132572E192E6900AB9931 /* FloatSub.app */;
 			productType = "com.apple.product-type.application";
@@ -154,6 +178,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2B2132812E19318500AB9931 /* Build configuration list for PBXNativeTarget "AudioCapture" */;
 			buildPhases = (
+				225C6BF931CBBD48EB951974 /* [CP] Check Pods Manifest.lock */,
 				2B2132722E19318500AB9931 /* Sources */,
 				2B2132732E19318500AB9931 /* Frameworks */,
 				2B2132742E19318500AB9931 /* Resources */,
@@ -166,10 +191,8 @@
 				2B21327A2E19318500AB9931 /* AudioCapture */,
 			);
 			name = AudioCapture;
-			packageProductDependencies = (
-			);
 			productName = AudioCapture;
-			productReference = 2B2132762E19318500AB9931 /* AudioCapture.appex */;
+			productReference = 2B2132762E19318500AB9931 /* 浮窗字幕.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -226,6 +249,74 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		125268472F940D9B2F34A978 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-FloatSub/Pods-FloatSub-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-FloatSub/Pods-FloatSub-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-FloatSub/Pods-FloatSub-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		225C6BF931CBBD48EB951974 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-AudioCapture-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E74FE086CEBAB07E824FACD8 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-FloatSub-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2B2132532E192E6900AB9931 /* Sources */ = {
@@ -376,6 +467,7 @@
 		};
 		2B2132632E192E6A00AB9931 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E9191128192483E35BEE1463 /* Pods-FloatSub.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -384,6 +476,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5V2KLNLRVB;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FloatSub/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -406,6 +499,7 @@
 		};
 		2B2132642E192E6A00AB9931 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2172A3B1BA9709617B94065C /* Pods-FloatSub.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -414,6 +508,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5V2KLNLRVB;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FloatSub/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -436,6 +531,7 @@
 		};
 		2B2132822E19318500AB9931 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3A40DDE128D129C5B37F602E /* Pods-AudioCapture.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AudioCapture/AudioCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -443,7 +539,7 @@
 				DEVELOPMENT_TEAM = 5V2KLNLRVB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AudioCapture/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AudioCapture;
+				INFOPLIST_KEY_CFBundleDisplayName = "浮窗字幕";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -452,7 +548,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ZY.FloatSub.AudioCapture;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "浮窗字幕";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -462,6 +558,7 @@
 		};
 		2B2132832E19318500AB9931 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DC5CE6EF37EB97BD281E8D93 /* Pods-AudioCapture.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = AudioCapture/AudioCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -469,7 +566,7 @@
 				DEVELOPMENT_TEAM = 5V2KLNLRVB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AudioCapture/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AudioCapture;
+				INFOPLIST_KEY_CFBundleDisplayName = "浮窗字幕";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -478,7 +575,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ZY.FloatSub.AudioCapture;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "浮窗字幕";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

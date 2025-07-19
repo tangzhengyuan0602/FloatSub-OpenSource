@@ -1,108 +1,156 @@
-//
-//  ContentView.swift
-//  FloatSub
-//
-//  Created by Zhengyuan Tang on 7/5/2025.
-//  Copyright (c) 2025 Zhengyuan Tang. All rights reserved.
-//
-
 import UIKit
 import Combine
 import ReplayKit
 import CoreFoundation
+import AVFoundation
 
 let broadcastStartedNotification = "broadcastStarted"
 let broadcastFinishedNotification = "broadcastFinished"
 
 class ContentView: UIViewController {
 
+    // MARK: - Properties
     private let pipView = UIPiPView()
     private let startButton = UIButton()
-    private let broadcastButton = UIButton() // 1. 新增一个直播按钮
+    private let broadcastButton = UIButton()
     private let timeLabel = UILabel()
+    private let inputTextField = UITextField()
+    private let readAloudButton = UIButton()
+    private let speechSynthesizer = AVSpeechSynthesizer()
 
-    // 2. 移除旧的 timer 和 formatter，添加 audioManager 和 cancellables
     private let audioManager = AudioRecognitionManager()
     private var cancellables = Set<AnyCancellable>()
+    private var broadcastPickerAdded = false
 
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .black
-        let width = CGFloat(240)
-        let margin = ((self.view.bounds.width - width) / 2)
-
-        // 1. 调整顺序：先创建和配置直播按钮
-        broadcastButton.frame = .init(x: margin, y: 80, width: width, height: 40)
-
-        if #available(iOS 15.0, *) {
-            var config = UIButton.Configuration.filled()
-            config.title = "开始录音"
-            config.baseBackgroundColor = .white
-            config.baseForegroundColor = .black
-            config.cornerStyle = .medium
-            // 在右侧添加边距
-            config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 20)
-            broadcastButton.configuration = config
-            // 将内容（文字）水平对齐到右侧
-            broadcastButton.contentHorizontalAlignment = .right
-        } else {
-            broadcastButton.setTitle("开始录音", for: .normal)
-            broadcastButton.setTitleColor(.black, for: .normal)
-            broadcastButton.backgroundColor = .white
-            broadcastButton.layer.cornerRadius = 10
-            // 将内容（文字）水平对齐到右侧
-            broadcastButton.contentHorizontalAlignment = .right
-            // 在右侧添加边距
-            broadcastButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 20)
-        }
-
-        self.view.addSubview(broadcastButton)
-
-        // 2. 将屏幕广播选择器添加到直播按钮上
-        addBroadcastPickerView(to: broadcastButton)
-
-        /// Start Button (for PiP)
-        startButton.frame = .init(x: margin, y: broadcastButton.frame.maxY + 20, width: width, height: 40)
-        startButton.addTarget(self, action: #selector(ContentView.toggle), for: .touchUpInside)
+        setupUI()
+        setupBindings()
+        setupActions()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         
-        if #available(iOS 15.0, *) {
-            var config = UIButton.Configuration.filled()
-            config.title = "字幕浮窗"
-            config.baseBackgroundColor = .white
-            config.baseForegroundColor = .black
-            config.cornerStyle = .medium
-            config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 20)
-            startButton.configuration = config
-            startButton.contentHorizontalAlignment = .right
-        } else {
-            startButton.setTitle("字幕浮窗", for: .normal)
-            startButton.setTitleColor(.black, for: .normal)
-            startButton.backgroundColor = .white
-            startButton.layer.cornerRadius = 10
-            startButton.contentHorizontalAlignment = .right
-            startButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 20)
+        // 在视图完全出现后添加选择器，此时按钮的 frame 已被正确计算
+        if !broadcastPickerAdded {
+            addBroadcastPickerView(to: broadcastButton)
+            broadcastPickerAdded = true
         }
-        self.view.addSubview(startButton)
+    }
+    
+    deinit {
+        let observer = Unmanaged.passUnretained(self).toOpaque()
+        CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFNotificationName(broadcastStartedNotification as CFString), nil)
+        CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFNotificationName(broadcastFinishedNotification as CFString), nil)
+    }
 
-        /// PiP View
-        let pipMargin = CGFloat(10) // 设置左右边距
-        let pipWidth = view.bounds.width - (pipMargin * 2) // 计算新的宽度
-        pipView.frame = .init(x: pipMargin, y: startButton.frame.maxY + 20, width: pipWidth, height: 40)
-        pipView.backgroundColor = .black
-        self.view.addSubview(pipView)
+    // MARK: - UI Setup
+    private func setupUI() {
+        // Gradient Background
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = view.bounds
+        gradientLayer.colors = [UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor, UIColor.black.cgColor]
+        view.layer.insertSublayer(gradientLayer, at: 0)
 
-        /// Time Label on PiPView
-        timeLabel.frame = .init(x: 10, y: 0, width: pipWidth - 20, height: 40)
+        // Main Stack View
+        let mainStack = UIStackView()
+        mainStack.axis = .vertical
+        mainStack.spacing = 30
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(mainStack)
+
+        // Title
+        let titleLabel = UILabel()
+        titleLabel.text = "浮窗字幕"
+        titleLabel.textColor = .white
+        titleLabel.font = .systemFont(ofSize: 34, weight: .bold)
+        titleLabel.textAlignment = .center
+
+        // Control Buttons Stack
+        let controlsStack = UIStackView(arrangedSubviews: [broadcastButton, startButton])
+        controlsStack.spacing = 15
+        controlsStack.distribution = .fillEqually
+        
+        configureButton(broadcastButton, title: "开始录音", iconName: "record.circle", primaryColor: .systemRed)
+        configureButton(startButton, title: "字幕浮窗", iconName: "pip", primaryColor: .systemBlue)
+
+        // Subtitle Display View (PiP View)
+        pipView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        pipView.layer.cornerRadius = 12
+        pipView.clipsToBounds = true
+        pipView.addSubview(timeLabel)
+        timeLabel.frame = .init(x: 15, y: 0, width: view.bounds.width - 60, height: 40)
         timeLabel.textColor = .white
         timeLabel.textAlignment = .left
         timeLabel.lineBreakMode = .byTruncatingHead
-        pipView.addSubview(timeLabel)
-
         if #available(iOS 13.0, *) {
             timeLabel.font = .monospacedSystemFont(ofSize: 15, weight: .medium)
         }
 
-        // 3. 移除旧的 Timer 相关代码，替换为对 transcribedText 的订阅
+        // Text-to-Speech Section
+        let ttsStack = UIStackView(arrangedSubviews: [inputTextField, readAloudButton])
+        ttsStack.axis = .vertical
+        ttsStack.spacing = 15
+        
+        inputTextField.placeholder = "在此输入要朗读的文字"
+        inputTextField.borderStyle = .none
+        inputTextField.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        inputTextField.textColor = .white
+        inputTextField.layer.cornerRadius = 10
+        inputTextField.setLeftPaddingPoints(15)
+        inputTextField.font = .systemFont(ofSize: 16)
+        
+        configureButton(readAloudButton, title: "朗读", iconName: "speaker.wave.2.fill", primaryColor: .systemGreen)
+
+        // Add components to main stack
+        mainStack.addArrangedSubview(titleLabel)
+        mainStack.addArrangedSubview(controlsStack)
+        mainStack.addArrangedSubview(pipView)
+        mainStack.addArrangedSubview(ttsStack)
+
+        // Layout Constraints
+        NSLayoutConstraint.activate([
+            mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            mainStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            mainStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            pipView.heightAnchor.constraint(equalToConstant: 40),
+            inputTextField.heightAnchor.constraint(equalToConstant: 50),
+            broadcastButton.heightAnchor.constraint(equalToConstant: 50),
+            startButton.heightAnchor.constraint(equalToConstant: 50),
+            readAloudButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
+        
+        // 确保这里没有调用 addBroadcastPickerView
+    }
+
+    private func configureButton(_ button: UIButton, title: String, iconName: String, primaryColor: UIColor) {
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.filled()
+            config.title = title
+            config.baseBackgroundColor = primaryColor
+            config.baseForegroundColor = .white
+            config.cornerStyle = .large
+            config.image = UIImage(systemName: iconName)
+            config.imagePadding = 8
+            button.configuration = config
+        } else {
+            button.setTitle(title, for: .normal)
+            button.setTitleColor(.white, for: .normal)
+            button.backgroundColor = primaryColor
+            button.layer.cornerRadius = 12
+            if let icon = UIImage(systemName: iconName) {
+                button.setImage(icon, for: .normal)
+            }
+            button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+            button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+        }
+    }
+
+    // MARK: - Bindings & Actions
+    private func setupBindings() {
+        // Subscribe to transcribed text
         audioManager.$transcribedText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newText in
@@ -110,59 +158,71 @@ class ContentView: UIViewController {
             }
             .store(in: &cancellables)
         
-        // 监听广播开始的通知
+        // Listen for broadcast notifications
         let observer = Unmanaged.passUnretained(self).toOpaque()
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { (center, observer, name, object, userInfo) in
-            guard let observer = observer else { return }
-            let mySelf = Unmanaged<ContentView>.fromOpaque(observer).takeUnretainedValue()
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { _, obs, _, _, _ in
+            guard let obs = obs else { return }
+            let mySelf = Unmanaged<ContentView>.fromOpaque(obs).takeUnretainedValue()
             DispatchQueue.main.async {
                 mySelf.updateBroadcastButton(isBroadcasting: true)
             }
         }, broadcastStartedNotification as CFString, nil, .deliverImmediately)
 
-        // 监听广播结束的通知
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { (center, observer, name, object, userInfo) in
-            guard let observer = observer else { return }
-            let mySelf = Unmanaged<ContentView>.fromOpaque(observer).takeUnretainedValue()
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { _, obs, _, _, _ in
+            guard let obs = obs else { return }
+            let mySelf = Unmanaged<ContentView>.fromOpaque(obs).takeUnretainedValue()
             DispatchQueue.main.async {
                 mySelf.updateBroadcastButton(isBroadcasting: false)
             }
         }, broadcastFinishedNotification as CFString, nil, .deliverImmediately)
     }
-
-    private func updateBroadcastButton(isBroadcasting: Bool) {
-        let title = isBroadcasting ? "停止录音" : "开始录音"
-        if #available(iOS 15.0, *) {
-            var config = broadcastButton.configuration
-            config?.title = title
-            broadcastButton.configuration = config
-        } else {
-            broadcastButton.setTitle(title, for: .normal)
-        }
+    
+    private func setupActions() {
+        startButton.addTarget(self, action: #selector(togglePiP), for: .touchUpInside)
+        readAloudButton.addTarget(self, action: #selector(readAloudTapped), for: .touchUpInside)
     }
 
-    // 4. 修改方法，使其可以将选择器添加到任意按钮上
-    private func addBroadcastPickerView(to button: UIButton) {
-        let broadcastPicker = RPSystemBroadcastPickerView(
-            frame: CGRect(x: 0, y: 0, width: button.bounds.width, height: button.bounds.height)
-        )
-        broadcastPicker.preferredExtension = "ZY.FloatSub.AudioCapture"
-        broadcastPicker.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        button.addSubview(broadcastPicker)
-    }
-
-    @objc func toggle() {
-        print("Toggle button tapped")
-        if (!pipView.isPictureInPictureActive()) {
-            print("Starting Picture in Picture")
-            pipView.startPictureInPicture(withRefreshInterval: (0.1 / 60.0))
+    @objc private func togglePiP() {
+        if !pipView.isPictureInPictureActive() {
+            pipView.startPictureInPicture(withRefreshInterval: 1.0 / 15.0)
         } else {
-            print("Stopping Picture in Picture")
             pipView.stopPictureInPicture()
         }
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
+    @objc private func readAloudTapped() {
+        guard let text = inputTextField.text, !text.isEmpty else { return }
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+        speechSynthesizer.speak(utterance)
+    }
+
+    // MARK: - Helpers
+    private func updateBroadcastButton(isBroadcasting: Bool) {
+        let title = isBroadcasting ? "停止录音" : "开始录音"
+        let iconName = isBroadcasting ? "stop.circle.fill" : "record.circle"
+        configureButton(broadcastButton, title: title, iconName: iconName, primaryColor: .systemRed)
+    }
+
+    private func addBroadcastPickerView(to button: UIButton) {
+        // 使用按钮的 bounds 来初始化选择器，此时 bounds 应该是正确的尺寸
+        let broadcastPicker = RPSystemBroadcastPickerView(frame: button.bounds)
+        broadcastPicker.preferredExtension = "ZY.FloatSub.AudioCapture"
+        broadcastPicker.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        
+        if let pickerView = broadcastPicker.subviews.first {
+            pickerView.backgroundColor = .clear
+        }
+        // 将选择器插入到按钮视图层级的最底层，以确保按钮的标题和图标在其之上
+        button.insertSubview(broadcastPicker, at: 0)
+    }
+}
+
+// Helper extension for UITextField padding
+extension UITextField {
+    func setLeftPaddingPoints(_ amount:CGFloat){
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: self.frame.size.height))
+        self.leftView = paddingView
+        self.leftViewMode = .always
     }
 }

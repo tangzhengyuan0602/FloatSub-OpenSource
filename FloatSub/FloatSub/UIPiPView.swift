@@ -54,6 +54,12 @@ open class UIPiPView: UIView,
         initialize()
     }
 
+    deinit {
+        stopPictureInPicture()
+        pipPossibleObservation?.invalidate()
+        frameSizeObservation?.invalidate()
+    }
+
     public func initialize() {
         guard UIPiPView.isUIPiPViewSupported(),
             #available(iOS 15.0, *) else { return }

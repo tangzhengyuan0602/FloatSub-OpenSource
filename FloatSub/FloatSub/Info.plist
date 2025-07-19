@@ -10,5 +10,9 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>CFBundleDisplayName</key>
+	<string>浮窗字幕</string>
 </dict>
 </plist>

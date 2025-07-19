@@ -1,0 +1,27 @@
+
+# 定义项目全局平台和版本
+platform :ios, '13.0'
+
+target 'AudioCapture' do
+  use_frameworks!
+end
+
+target 'FloatSub' do
+  use_frameworks!
+
+  pod 'UMCommon'
+  pod 'UMDevice'
+
+  pod 'UMCCommonLog'
+
+  pod 'UMAPM'
+end
+
+# === 添加这个脚本来统一所有库的部署目标版本 ===
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
+  end
+end
