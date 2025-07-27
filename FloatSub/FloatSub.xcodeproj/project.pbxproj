@@ -64,6 +64,13 @@
 			);
 			target = 2B2132752E19318500AB9931 /* AudioCapture */;
 		};
+		2B217ECE2E2BAB52000F5013 /* Exceptions for "FloatSub" folder in "AudioCapture" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 2B2132752E19318500AB9931 /* AudioCapture */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -71,6 +78,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				2B2132712E19315400AB9931 /* Exceptions for "FloatSub" folder in "FloatSub" target */,
+				2B217ECE2E2BAB52000F5013 /* Exceptions for "FloatSub" folder in "AudioCapture" target */,
 			);
 			path = FloatSub;
 			sourceTree = "<group>";

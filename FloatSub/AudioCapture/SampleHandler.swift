@@ -17,7 +17,7 @@ class SampleHandler: RPBroadcastSampleHandler {
     private let logger = OSLog(subsystem: "FloatSub", category: "FloatSub.AudioCapture")
     private var appAudioDataBuffer = Data()
     private var micAudioDataBuffer = Data()
-    private let targetBytesPer0_1Sec = Int(44100 * 0.1 * 4) // 转换为 Int 类型
+    private let targetBytesPer0_5Sec = Int(44100 * 0.5 * 4) // 转换为 Int 类型
     
     private var hasValidatedAppAudioFormat = false
     private var hasValidatedMicAudioFormat = false
@@ -152,14 +152,14 @@ class SampleHandler: RPBroadcastSampleHandler {
         buffer.append(rawData)
         
         // 当累积到足够的数据量时处理
-        if buffer.count >= Int(targetBytesPer0_1Sec) {
-            let chunk = buffer.prefix(Int(targetBytesPer0_1Sec))
-            buffer.removeFirst(Int(targetBytesPer0_1Sec))
+        if buffer.count >= Int(targetBytesPer0_5Sec) {
+            let chunk = buffer.prefix(Int(targetBytesPer0_5Sec))
+            buffer.removeFirst(Int(targetBytesPer0_5Sec))
             
             // 写入共享文件
             if let audioURL = containerURL?.appendingPathComponent(fileName) {
                 try? chunk.write(to: audioURL)
-                os_log("已写入 0.1秒音频数据到 %{public}@: %d bytes", log: logger, type: .debug, fileName, chunk.count)
+                os_log("已写入 0.5秒音频数据到 %{public}@: %d bytes", log: logger, type: .debug, fileName, chunk.count)
             }
         }
     }

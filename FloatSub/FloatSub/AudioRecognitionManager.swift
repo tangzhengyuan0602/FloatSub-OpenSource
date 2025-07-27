@@ -24,7 +24,7 @@ class AudioRecognitionManager: ObservableObject {
     }
     
     private func setupTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.checkForNewAudioData()
         }
