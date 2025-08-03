@@ -6,11 +6,6 @@ This application makes use of the following third party libraries:
 Copyright 2011 - 2020 umeng.com. All rights reserved.
 
 
-## UMCCommonLog
-
-Copyright 2011 - 2021 umeng.com. All rights reserved.
-
-
 ## UMCommon
 
 Copyright 2011 - 2021 umeng.com. All rights reserved.

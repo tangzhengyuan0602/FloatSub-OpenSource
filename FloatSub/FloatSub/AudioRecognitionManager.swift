@@ -7,15 +7,31 @@ private let logger = Logger(subsystem: "FloatSub", category: "FloatSub.AudioReco
     
 class AudioRecognitionManager: ObservableObject {
     @Published var transcribedText: String = ""
-    private let speechRecognizer: SFSpeechRecognizer
+    private var speechRecognizer: SFSpeechRecognizer
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var timer: Timer?
     private let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.FloatSub")
     
+    // 添加语言属性
+    var currentLanguage: String = "zh-CN" {
+        didSet {
+            // 当语言改变时，重新初始化语音识别器
+            speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: currentLanguage))!
+            speechRecognizer.defaultTaskHint = .dictation
+            speechRecognizer.queue = OperationQueue()
+            
+            // 重置当前的识别任务
+            recognitionRequest?.endAudio()
+            recognitionRequest = nil
+            recognitionTask?.cancel()
+            recognitionTask = nil
+        }
+    }
+    
     init() {
         // 初始化语音识别器并配置
-        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))!
+        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: currentLanguage))!
         speechRecognizer.defaultTaskHint = .dictation
         speechRecognizer.queue = OperationQueue()
 
