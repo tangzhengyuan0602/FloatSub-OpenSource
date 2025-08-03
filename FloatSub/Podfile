@@ -2,17 +2,13 @@
 # 定义项目全局平台和版本
 platform :ios, '13.0'
 
-target 'AudioCapture' do
-  use_frameworks!
-end
-
 target 'FloatSub' do
   use_frameworks!
 
   pod 'UMCommon'
   pod 'UMDevice'
 
-  pod 'UMCCommonLog'
+  #pod 'UMCCommonLog'
 
   pod 'UMAPM'
 end

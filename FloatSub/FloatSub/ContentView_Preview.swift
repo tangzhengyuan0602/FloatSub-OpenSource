@@ -18,6 +18,5 @@ struct ContentView_Preview: PreviewProvider {
     static var previews: some View {
         ContentViewRepresentable()
             .edgesIgnoringSafeArea(.all) // 可以选择忽略安全区域以全屏预览
-            .previewDevice("iPhone 14 Pro") // 您可以更改为您想预览的设备
     }
 }

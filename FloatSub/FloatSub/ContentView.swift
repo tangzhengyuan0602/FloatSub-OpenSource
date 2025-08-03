@@ -16,6 +16,8 @@ class ContentView: UIViewController {
     private let timeLabel = UILabel()
     private let inputTextField = UITextField()
     private let readAloudButton = UIButton()
+    private let clearButton = UIButton() // 添加清空按钮
+    private let languageSegmentedControl = UISegmentedControl(items: ["中文", "英文"]) // 添加语言选择控件
     private let speechSynthesizer = AVSpeechSynthesizer()
 
     private let audioManager = AudioRecognitionManager()
@@ -67,15 +69,24 @@ class ContentView: UIViewController {
         titleLabel.textColor = .white
         titleLabel.font = .systemFont(ofSize: 34, weight: .bold)
         titleLabel.textAlignment = .center
-
+        
+        // 添加醒目的提醒标签
+        let reminderLabel = UILabel()
+        reminderLabel.text = "点击开始录音后会需要申请录屏权限用来获得手机音频和麦克风音频"
+        reminderLabel.textColor = .systemYellow  // 使用系统黄色使其更醒目
+        reminderLabel.font = .systemFont(ofSize: 14, weight: .medium)  // 稍微增大字体
+        reminderLabel.textAlignment = .center
+        reminderLabel.numberOfLines = 0
+        reminderLabel.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)  // 添加背景色
+        reminderLabel.layer.cornerRadius = 8  // 添加圆角
+        reminderLabel.clipsToBounds = true
+        reminderLabel.setContentCompressionResistancePriority(.required, for: .vertical)  // 防止被压缩
+        
         // Control Buttons Stack
         let controlsStack = UIStackView(arrangedSubviews: [broadcastButton, startButton])
         controlsStack.spacing = 15
         controlsStack.distribution = .fillEqually
         
-        configureButton(broadcastButton, title: "开始录音", iconName: "record.circle", primaryColor: .systemRed)
-        configureButton(startButton, title: "字幕浮窗", iconName: "pip", primaryColor: .systemBlue)
-
         // Subtitle Display View (PiP View)
         pipView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         pipView.layer.cornerRadius = 12
@@ -89,10 +100,31 @@ class ContentView: UIViewController {
             timeLabel.font = .monospacedSystemFont(ofSize: 15, weight: .medium)
         }
 
+        // Language Selection
+        languageSegmentedControl.selectedSegmentIndex = 0 // 默认选择中文
+        languageSegmentedControl.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        languageSegmentedControl.selectedSegmentTintColor = .systemBlue
+        
+        // 设置文本颜色
+        let font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        languageSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: font], for: .normal)
+        languageSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: font], for: .selected)
+
         // Text-to-Speech Section
-        let ttsStack = UIStackView(arrangedSubviews: [inputTextField, readAloudButton])
+        // 创建一个垂直栈视图来包含输入框和按钮
+        let ttsStack = UIStackView()
         ttsStack.axis = .vertical
-        ttsStack.spacing = 15
+        ttsStack.spacing = 10
+        
+        ttsStack.addArrangedSubview(inputTextField)
+        
+        // 创建一个水平栈视图来包含朗读和清空按钮
+        let buttonStack = UIStackView(arrangedSubviews: [readAloudButton, clearButton])
+        buttonStack.axis = .horizontal
+        buttonStack.spacing = 15
+        
+        // 将按钮栈视图添加到文本输入框下方
+        ttsStack.addArrangedSubview(buttonStack)
         
         inputTextField.placeholder = "在此输入要朗读的文字"
         inputTextField.borderStyle = .none
@@ -103,12 +135,18 @@ class ContentView: UIViewController {
         inputTextField.font = .systemFont(ofSize: 16)
         
         configureButton(readAloudButton, title: "朗读", iconName: "speaker.wave.2.fill", primaryColor: .systemGreen)
-
-        // Add components to main stack
+        configureButton(clearButton, title: "清空", iconName: "trash.fill", primaryColor: .systemGray) // 配置清空按钮
+        
+        // Add components to main stack (正确的添加顺序)
         mainStack.addArrangedSubview(titleLabel)
-        mainStack.addArrangedSubview(controlsStack)
-        mainStack.addArrangedSubview(pipView)
-        mainStack.addArrangedSubview(ttsStack)
+        mainStack.addArrangedSubview(reminderLabel)  // 提醒标签放在标题下面
+        mainStack.addArrangedSubview(controlsStack)  // 控制按钮放在提醒标签下面
+        mainStack.addArrangedSubview(languageSegmentedControl) // 语言选择控件
+        mainStack.addArrangedSubview(pipView)  // 字幕浮窗视图
+        mainStack.addArrangedSubview(ttsStack)  // 文本朗读区域
+        
+        configureButton(broadcastButton, title: "开始录音", iconName: "record.circle", primaryColor: .systemRed)
+        configureButton(startButton, title: "字幕浮窗", iconName: "pip", primaryColor: .systemBlue)
 
         // Layout Constraints
         NSLayoutConstraint.activate([
@@ -119,10 +157,10 @@ class ContentView: UIViewController {
             inputTextField.heightAnchor.constraint(equalToConstant: 50),
             broadcastButton.heightAnchor.constraint(equalToConstant: 50),
             startButton.heightAnchor.constraint(equalToConstant: 50),
-            readAloudButton.heightAnchor.constraint(equalToConstant: 50)
+            readAloudButton.heightAnchor.constraint(equalToConstant: 50),
+            clearButton.widthAnchor.constraint(equalToConstant: 80), // 设置清空按钮宽度
+            languageSegmentedControl.heightAnchor.constraint(equalToConstant: 40) // 设置语言选择控件高度
         ])
-        
-        // 确保这里没有调用 addBroadcastPickerView
     }
 
     private func configureButton(_ button: UIButton, title: String, iconName: String, primaryColor: UIColor) {
@@ -180,6 +218,8 @@ class ContentView: UIViewController {
     private func setupActions() {
         startButton.addTarget(self, action: #selector(togglePiP), for: .touchUpInside)
         readAloudButton.addTarget(self, action: #selector(readAloudTapped), for: .touchUpInside)
+        clearButton.addTarget(self, action: #selector(clearTextTapped), for: .touchUpInside) // 添加清空按钮事件
+        languageSegmentedControl.addTarget(self, action: #selector(languageChanged), for: .valueChanged) // 添加语言选择事件
     }
 
     @objc private func togglePiP() {
@@ -193,8 +233,22 @@ class ContentView: UIViewController {
     @objc private func readAloudTapped() {
         guard let text = inputTextField.text, !text.isEmpty else { return }
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+        
+        // 根据语言选择设置语音
+        let language = languageSegmentedControl.selectedSegmentIndex == 0 ? "zh-CN" : "en-US"
+        utterance.voice = AVSpeechSynthesisVoice(language: language)
         speechSynthesizer.speak(utterance)
+    }
+    
+    // 添加清空按钮点击事件
+    @objc private func clearTextTapped() {
+        inputTextField.text = ""
+    }
+    
+    // 添加语言选择改变事件
+    @objc private func languageChanged() {
+        let language = languageSegmentedControl.selectedSegmentIndex == 0 ? "zh-CN" : "en-US"
+        audioManager.currentLanguage = language
     }
 
     // MARK: - Helpers
