@@ -7,22 +7,42 @@ import AVFoundation
 let broadcastStartedNotification = "broadcastStarted"
 let broadcastFinishedNotification = "broadcastFinished"
 
-class ContentView: UIViewController {
+class ContentView: UIViewController, UITextViewDelegate {
 
     // MARK: - Properties
     private let pipView = UIPiPView()
-    private let startButton = UIButton()
-    private let broadcastButton = UIButton()
-    private let timeLabel = UILabel()
-    private let inputTextField = UITextField()
-    private let readAloudButton = UIButton()
-    private let clearButton = UIButton() // 添加清空按钮
-    private let languageSegmentedControl = UISegmentedControl(items: ["中文", "英文"]) // 添加语言选择控件
-    private let speechSynthesizer = AVSpeechSynthesizer()
-
     private let audioManager = AudioRecognitionManager()
     private var cancellables = Set<AnyCancellable>()
     private var broadcastPickerAdded = false
+    private let speechSynthesizer = AVSpeechSynthesizer()
+    private var recordingTimer: Timer?
+    private var recordingDuration: Int = 0
+
+    // MARK: - UI Components
+    private let titleLabel = UILabel()
+    
+    // Real-time Subtitle Card
+    private let subtitleCardView = UIView()
+    private let subtitleTitleLabel = UILabel()
+    private let listeningStatusIndicator = UIView()
+    private let listeningStatusLabel = UILabel()
+    private let subtitleTextView = UITextView()
+    private let timerLabel = UILabel()
+    private let recordButton = UIButton(type: .system)
+    private let pipButton = UIButton(type: .system) // Renamed from languageToggleButton
+
+    // Text Input Card
+    private let textInputCardView = UIView()
+    private let textInputTitleLabel = UILabel()
+    private let textInputView = UITextView()
+    private let readAloudButton = UIButton(type: .system)
+    private let clearButton = UIButton(type: .system)
+    
+    private let placeholderText = "欢迎使用语音转字幕工具,\n请点击录音按钮开始..."
+    private let textInputPlaceholderText = "在此输入要朗读的文字"
+
+    // PiP View Label
+    private let pipSubtitleLabel = UILabel()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -30,14 +50,22 @@ class ContentView: UIViewController {
         setupUI()
         setupBindings()
         setupActions()
+        // Set initial state
+        updateBroadcastButton(isBroadcasting: false)
+        subtitleTextView.text = placeholderText
+        textInputView.text = textInputPlaceholderText
+        textInputView.textColor = .lightGray
+        textInputView.delegate = self
+
+        // Dismiss keyboard on tap outside
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        // 在视图完全出现后添加选择器，此时按钮的 frame 已被正确计算
         if !broadcastPickerAdded {
-            addBroadcastPickerView(to: broadcastButton)
+            addBroadcastPickerView(to: recordButton)
             broadcastPickerAdded = true
         }
     }
@@ -50,153 +78,220 @@ class ContentView: UIViewController {
 
     // MARK: - UI Setup
     private func setupUI() {
-        // Gradient Background
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.frame = view.bounds
-        gradientLayer.colors = [UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor, UIColor.black.cgColor]
-        view.layer.insertSublayer(gradientLayer, at: 0)
+        view.backgroundColor = UIColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1.0)
+
+        // Main Title
+        titleLabel.text = "语音转字幕"
+        titleLabel.font = .systemFont(ofSize: 24, weight: .bold)
+        titleLabel.textColor = .black
+        titleLabel.textAlignment = .center
+
+        // Setup Cards and PiP View
+        setupSubtitleCard()
+        setupTextInputCard()
+        setupPiPView()
 
         // Main Stack View
-        let mainStack = UIStackView()
+        let mainStack = UIStackView(arrangedSubviews: [titleLabel, subtitleCardView, textInputCardView, UIView()])
         mainStack.axis = .vertical
-        mainStack.spacing = 30
+        mainStack.spacing = 20
         mainStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mainStack)
 
-        // Title
-        let titleLabel = UILabel()
-        titleLabel.text = "浮窗字幕"
-        titleLabel.textColor = .white
-        titleLabel.font = .systemFont(ofSize: 34, weight: .bold)
-        titleLabel.textAlignment = .center
-        
-        // 添加醒目的提醒标签
-        let reminderLabel = UILabel()
-        reminderLabel.text = "点击开始录音后会需要申请录屏权限用来获得手机音频和麦克风音频"
-        reminderLabel.textColor = .systemYellow  // 使用系统黄色使其更醒目
-        reminderLabel.font = .systemFont(ofSize: 14, weight: .medium)  // 稍微增大字体
-        reminderLabel.textAlignment = .center
-        reminderLabel.numberOfLines = 0
-        reminderLabel.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)  // 添加背景色
-        reminderLabel.layer.cornerRadius = 8  // 添加圆角
-        reminderLabel.clipsToBounds = true
-        reminderLabel.setContentCompressionResistancePriority(.required, for: .vertical)  // 防止被压缩
-        
-        // Control Buttons Stack
-        let controlsStack = UIStackView(arrangedSubviews: [broadcastButton, startButton])
-        controlsStack.spacing = 15
-        controlsStack.distribution = .fillEqually
-        
-        // Subtitle Display View (PiP View)
-        pipView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        pipView.layer.cornerRadius = 12
-        pipView.clipsToBounds = true
-        pipView.addSubview(timeLabel)
-        timeLabel.frame = .init(x: 15, y: 0, width: view.bounds.width - 60, height: 40)
-        timeLabel.textColor = .white
-        timeLabel.textAlignment = .left
-        timeLabel.lineBreakMode = .byTruncatingHead
-        if #available(iOS 13.0, *) {
-            timeLabel.font = .monospacedSystemFont(ofSize: 15, weight: .medium)
-        }
-
-        // Language Selection
-        languageSegmentedControl.selectedSegmentIndex = 0 // 默认选择中文
-        languageSegmentedControl.backgroundColor = UIColor.white.withAlphaComponent(0.2)
-        languageSegmentedControl.selectedSegmentTintColor = .systemBlue
-        
-        // 设置文本颜色
-        let font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        languageSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: font], for: .normal)
-        languageSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: font], for: .selected)
-
-        // Text-to-Speech Section
-        // 创建一个垂直栈视图来包含输入框和按钮
-        let ttsStack = UIStackView()
-        ttsStack.axis = .vertical
-        ttsStack.spacing = 10
-        
-        ttsStack.addArrangedSubview(inputTextField)
-        
-        // 创建一个水平栈视图来包含朗读和清空按钮
-        let buttonStack = UIStackView(arrangedSubviews: [readAloudButton, clearButton])
-        buttonStack.axis = .horizontal
-        buttonStack.spacing = 15
-        
-        // 将按钮栈视图添加到文本输入框下方
-        ttsStack.addArrangedSubview(buttonStack)
-        
-        inputTextField.placeholder = "在此输入要朗读的文字"
-        inputTextField.borderStyle = .none
-        inputTextField.backgroundColor = UIColor.white.withAlphaComponent(0.1)
-        inputTextField.textColor = .white
-        inputTextField.layer.cornerRadius = 10
-        inputTextField.setLeftPaddingPoints(15)
-        inputTextField.font = .systemFont(ofSize: 16)
-        
-        configureButton(readAloudButton, title: "朗读", iconName: "speaker.wave.2.fill", primaryColor: .systemGreen)
-        configureButton(clearButton, title: "清空", iconName: "trash.fill", primaryColor: .systemGray) // 配置清空按钮
-        
-        // Add components to main stack (正确的添加顺序)
-        mainStack.addArrangedSubview(titleLabel)
-        mainStack.addArrangedSubview(reminderLabel)  // 提醒标签放在标题下面
-        mainStack.addArrangedSubview(controlsStack)  // 控制按钮放在提醒标签下面
-        mainStack.addArrangedSubview(languageSegmentedControl) // 语言选择控件
-        mainStack.addArrangedSubview(pipView)  // 字幕浮窗视图
-        mainStack.addArrangedSubview(ttsStack)  // 文本朗读区域
-        
-        configureButton(broadcastButton, title: "开始录音", iconName: "record.circle", primaryColor: .systemRed)
-        configureButton(startButton, title: "字幕浮窗", iconName: "pip", primaryColor: .systemBlue)
-
-        // Layout Constraints
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             mainStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             mainStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            pipView.heightAnchor.constraint(equalToConstant: 40),
-            inputTextField.heightAnchor.constraint(equalToConstant: 50),
-            broadcastButton.heightAnchor.constraint(equalToConstant: 50),
-            startButton.heightAnchor.constraint(equalToConstant: 50),
-            readAloudButton.heightAnchor.constraint(equalToConstant: 50),
-            clearButton.widthAnchor.constraint(equalToConstant: 80), // 设置清空按钮宽度
-            languageSegmentedControl.heightAnchor.constraint(equalToConstant: 40) // 设置语言选择控件高度
+            mainStack.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         ])
     }
 
-    private func configureButton(_ button: UIButton, title: String, iconName: String, primaryColor: UIColor) {
+    private func setupSubtitleCard() {
+        subtitleCardView.backgroundColor = .white
+        subtitleCardView.layer.cornerRadius = 12
+        subtitleCardView.translatesAutoresizingMaskIntoConstraints = false
+
+        subtitleTitleLabel.text = "实时字幕"
+        subtitleTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+        
+        listeningStatusIndicator.backgroundColor = .green
+        listeningStatusIndicator.layer.cornerRadius = 4
+        
+        listeningStatusLabel.text = "正在监听"
+        listeningStatusLabel.font = .systemFont(ofSize: 14)
+        listeningStatusLabel.textColor = .gray
+
+        let statusStack = UIStackView(arrangedSubviews: [listeningStatusIndicator, listeningStatusLabel])
+        statusStack.spacing = 6
+        statusStack.alignment = .center
+
+        let headerStack = UIStackView(arrangedSubviews: [subtitleTitleLabel, UIView(), statusStack])
+        headerStack.axis = .horizontal
+
+        subtitleTextView.font = .systemFont(ofSize: 16)
+        subtitleTextView.textColor = .lightGray
+        subtitleTextView.backgroundColor = .clear
+        subtitleTextView.isEditable = false
+        subtitleTextView.isScrollEnabled = true
+        
+        timerLabel.text = "00:00"
+        timerLabel.font = .systemFont(ofSize: 14)
+        timerLabel.textColor = .gray
+
+        let subtitleContentStack = UIStackView(arrangedSubviews: [subtitleTextView, timerLabel])
+        subtitleContentStack.axis = .vertical
+        subtitleContentStack.spacing = 8
+        subtitleContentStack.backgroundColor = UIColor(red: 247/255, green: 247/255, blue: 247/255, alpha: 1.0)
+        subtitleContentStack.layer.cornerRadius = 8
+        subtitleContentStack.isLayoutMarginsRelativeArrangement = true
+        subtitleContentStack.layoutMargins = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+
+        configureButton(recordButton, title: "开始录音", iconName: "mic.fill", primaryColor: .systemBlue, titleColor: .white)
+        // Changed icon to 'pip' for Picture-in-Picture
+        configureButton(pipButton, title: "", iconName: "pip", primaryColor: .lightGray, titleColor: .darkGray, isIconOnly: true)
+
+        let buttonStack = UIStackView(arrangedSubviews: [recordButton, pipButton])
+        buttonStack.axis = .horizontal
+        buttonStack.spacing = 15
+        
+        let cardStack = UIStackView(arrangedSubviews: [headerStack, subtitleContentStack, buttonStack])
+        cardStack.axis = .vertical
+        cardStack.spacing = 15
+        cardStack.translatesAutoresizingMaskIntoConstraints = false
+        subtitleCardView.addSubview(cardStack)
+
+        NSLayoutConstraint.activate([
+            cardStack.topAnchor.constraint(equalTo: subtitleCardView.topAnchor, constant: 15),
+            cardStack.leadingAnchor.constraint(equalTo: subtitleCardView.leadingAnchor, constant: 15),
+            cardStack.trailingAnchor.constraint(equalTo: subtitleCardView.trailingAnchor, constant: -15),
+            cardStack.bottomAnchor.constraint(equalTo: subtitleCardView.bottomAnchor, constant: -15),
+            
+            listeningStatusIndicator.widthAnchor.constraint(equalToConstant: 8),
+            listeningStatusIndicator.heightAnchor.constraint(equalToConstant: 8),
+            
+            subtitleTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 80),
+            recordButton.heightAnchor.constraint(equalToConstant: 50),
+            pipButton.widthAnchor.constraint(equalTo: pipButton.heightAnchor),
+            pipButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
+    }
+
+    private func setupTextInputCard() {
+        textInputCardView.backgroundColor = .white
+        textInputCardView.layer.cornerRadius = 12
+        textInputCardView.translatesAutoresizingMaskIntoConstraints = false
+
+        textInputTitleLabel.text = "文本输入"
+        textInputTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+
+        textInputView.font = .systemFont(ofSize: 16)
+        textInputView.layer.cornerRadius = 8
+        textInputView.backgroundColor = UIColor(red: 247/255, green: 247/255, blue: 247/255, alpha: 1.0)
+        textInputView.isScrollEnabled = true
+
+        configureButton(readAloudButton, title: "朗读", iconName: "speaker.wave.2.fill", primaryColor: .systemBlue, titleColor: .white)
+        configureButton(clearButton, title: "", iconName: "trash.fill", primaryColor: .lightGray, titleColor: .darkGray, isIconOnly: true)
+
+        let buttonStack = UIStackView(arrangedSubviews: [readAloudButton, clearButton])
+        buttonStack.axis = .horizontal
+        buttonStack.spacing = 15
+
+        let cardStack = UIStackView(arrangedSubviews: [textInputTitleLabel, textInputView, buttonStack])
+        cardStack.axis = .vertical
+        cardStack.spacing = 15
+        cardStack.translatesAutoresizingMaskIntoConstraints = false
+        textInputCardView.addSubview(cardStack)
+
+        NSLayoutConstraint.activate([
+            cardStack.topAnchor.constraint(equalTo: textInputCardView.topAnchor, constant: 15),
+            cardStack.leadingAnchor.constraint(equalTo: textInputCardView.leadingAnchor, constant: 15),
+            cardStack.trailingAnchor.constraint(equalTo: textInputCardView.trailingAnchor, constant: -15),
+            cardStack.bottomAnchor.constraint(equalTo: textInputCardView.bottomAnchor, constant: -15),
+            
+            textInputView.heightAnchor.constraint(equalToConstant: 120),
+            readAloudButton.heightAnchor.constraint(equalToConstant: 50),
+            clearButton.widthAnchor.constraint(equalTo: clearButton.heightAnchor),
+            clearButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
+    }
+    
+    private func setupPiPView() {
+        // Add pipView to the view hierarchy. It doesn't need to be visible on screen.
+        // We give it a width and position it off-screen. Its height will be determined by the label's content.
+        view.addSubview(pipView)
+        pipView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            pipView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            pipView.widthAnchor.constraint(equalToConstant: 300), // A reasonable width for the PiP view
+            pipView.topAnchor.constraint(equalTo: view.bottomAnchor), // Position it off-screen
+        ])
+
+        pipView.addSubview(pipSubtitleLabel)
+        pipSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            pipSubtitleLabel.leadingAnchor.constraint(equalTo: pipView.leadingAnchor, constant: 8),
+            pipSubtitleLabel.trailingAnchor.constraint(equalTo: pipView.trailingAnchor, constant: -8),
+            pipSubtitleLabel.topAnchor.constraint(equalTo: pipView.topAnchor, constant: 8),
+            pipSubtitleLabel.bottomAnchor.constraint(equalTo: pipView.bottomAnchor, constant: -8)
+        ])
+        pipSubtitleLabel.textColor = .white
+        pipSubtitleLabel.textAlignment = .center
+        pipSubtitleLabel.numberOfLines = 1
+        pipSubtitleLabel.lineBreakMode = .byTruncatingHead
+        if #available(iOS 13.0, *) {
+            pipSubtitleLabel.font = .monospacedSystemFont(ofSize: 15, weight: .medium)
+        }
+    }
+
+    private func configureButton(_ button: UIButton, title: String, iconName: String, primaryColor: UIColor, titleColor: UIColor, isIconOnly: Bool = false) {
         if #available(iOS 15.0, *) {
             var config = UIButton.Configuration.filled()
-            config.title = title
+            config.title = isIconOnly ? nil : title
             config.baseBackgroundColor = primaryColor
-            config.baseForegroundColor = .white
+            config.baseForegroundColor = titleColor
             config.cornerStyle = .large
             config.image = UIImage(systemName: iconName)
             config.imagePadding = 8
             button.configuration = config
         } else {
-            button.setTitle(title, for: .normal)
-            button.setTitleColor(.white, for: .normal)
+            button.setTitle(isIconOnly ? nil : title, for: .normal)
+            button.setTitleColor(titleColor, for: .normal)
             button.backgroundColor = primaryColor
             button.layer.cornerRadius = 12
             if let icon = UIImage(systemName: iconName) {
                 button.setImage(icon, for: .normal)
+                button.tintColor = titleColor
             }
-            button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
-            button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+            if !isIconOnly {
+                button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+                button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+            }
         }
     }
 
     // MARK: - Bindings & Actions
     private func setupBindings() {
-        // Subscribe to transcribed text
         audioManager.$transcribedText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newText in
-                self?.timeLabel.text = newText
+                guard let self = self else { return }
+                if newText.isEmpty {
+                    self.subtitleTextView.text = self.placeholderText
+                    self.subtitleTextView.textColor = .lightGray
+                } else {
+                    self.subtitleTextView.text = newText
+                    self.subtitleTextView.textColor = .black
+                    // Automatically scroll to the bottom
+                    if !self.subtitleTextView.text.isEmpty {
+                        let range = NSMakeRange(self.subtitleTextView.text.count - 1, 1)
+                        self.subtitleTextView.scrollRangeToVisible(range)
+                    }
+                }
+                // Update PiP label as well
+                self.pipSubtitleLabel.text = newText
             }
             .store(in: &cancellables)
         
-        // Listen for broadcast notifications
         let observer = Unmanaged.passUnretained(self).toOpaque()
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { _, obs, _, _, _ in
             guard let obs = obs else { return }
@@ -216,10 +311,9 @@ class ContentView: UIViewController {
     }
     
     private func setupActions() {
-        startButton.addTarget(self, action: #selector(togglePiP), for: .touchUpInside)
+        pipButton.addTarget(self, action: #selector(togglePiP), for: .touchUpInside)
         readAloudButton.addTarget(self, action: #selector(readAloudTapped), for: .touchUpInside)
-        clearButton.addTarget(self, action: #selector(clearTextTapped), for: .touchUpInside) // 添加清空按钮事件
-        languageSegmentedControl.addTarget(self, action: #selector(languageChanged), for: .valueChanged) // 添加语言选择事件
+        clearButton.addTarget(self, action: #selector(clearTextTapped), for: .touchUpInside)
     }
 
     @objc private func togglePiP() {
@@ -231,52 +325,83 @@ class ContentView: UIViewController {
     }
 
     @objc private func readAloudTapped() {
-        guard let text = inputTextField.text, !text.isEmpty else { return }
+        guard let text = textInputView.text, !text.isEmpty, text != textInputPlaceholderText else { return }
         let utterance = AVSpeechUtterance(string: text)
-        
-        // 根据语言选择设置语音
-        let language = languageSegmentedControl.selectedSegmentIndex == 0 ? "zh-CN" : "en-US"
-        utterance.voice = AVSpeechSynthesisVoice(language: language)
+        utterance.voice = AVSpeechSynthesisVoice(language: audioManager.currentLanguage)
         speechSynthesizer.speak(utterance)
     }
     
-    // 添加清空按钮点击事件
     @objc private func clearTextTapped() {
-        inputTextField.text = ""
+        textInputView.text = ""
     }
-    
-    // 添加语言选择改变事件
-    @objc private func languageChanged() {
-        let language = languageSegmentedControl.selectedSegmentIndex == 0 ? "zh-CN" : "en-US"
-        audioManager.currentLanguage = language
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    // MARK: - Timer
+    private func startTimer() {
+        recordingDuration = 0
+        updateTimerLabel()
+        recordingTimer?.invalidate()
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.recordingDuration += 1
+            self.updateTimerLabel()
+        }
+    }
+
+    private func stopTimer() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        recordingDuration = 0
+        updateTimerLabel()
+    }
+
+    private func updateTimerLabel() {
+        let minutes = recordingDuration / 60
+        let seconds = recordingDuration % 60
+        timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
     }
 
     // MARK: - Helpers
     private func updateBroadcastButton(isBroadcasting: Bool) {
         let title = isBroadcasting ? "停止录音" : "开始录音"
-        let iconName = isBroadcasting ? "stop.circle.fill" : "record.circle"
-        configureButton(broadcastButton, title: title, iconName: iconName, primaryColor: .systemRed)
+        let iconName = isBroadcasting ? "stop.fill" : "mic.fill"
+        let color = isBroadcasting ? UIColor.systemRed : UIColor.systemBlue
+        configureButton(recordButton, title: title, iconName: iconName, primaryColor: color, titleColor: .white)
+        listeningStatusIndicator.backgroundColor = isBroadcasting ? .green : .gray
+        listeningStatusLabel.text = isBroadcasting ? "正在监听" : "未开始"
+
+        if isBroadcasting {
+            startTimer()
+        } else {
+            stopTimer()
+        }
     }
 
     private func addBroadcastPickerView(to button: UIButton) {
-        // 使用按钮的 bounds 来初始化选择器，此时 bounds 应该是正确的尺寸
         let broadcastPicker = RPSystemBroadcastPickerView(frame: button.bounds)
         broadcastPicker.preferredExtension = "ZY.FloatSub.AudioCapture"
         broadcastPicker.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        
         if let pickerView = broadcastPicker.subviews.first {
             pickerView.backgroundColor = .clear
         }
-        // 将选择器插入到按钮视图层级的最底层，以确保按钮的标题和图标在其之上
         button.insertSubview(broadcastPicker, at: 0)
     }
-}
-
-// Helper extension for UITextField padding
-extension UITextField {
-    func setLeftPaddingPoints(_ amount:CGFloat){
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: self.frame.size.height))
-        self.leftView = paddingView
-        self.leftViewMode = .always
+    
+    // MARK: - UITextViewDelegate
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        if textView.text == textInputPlaceholderText {
+            textView.text = ""
+            textView.textColor = .black
+        }
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if textView.text.isEmpty {
+            textView.text = textInputPlaceholderText
+            textView.textColor = .lightGray
+        }
     }
 }
