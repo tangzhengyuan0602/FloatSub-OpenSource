@@ -405,3 +405,23 @@ class ContentView: UIViewController, UITextViewDelegate {
         }
     }
 }
+
+#if DEBUG
+import SwiftUI
+
+struct ContentView_Wrapper: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> ContentView {
+        return ContentView()
+    }
+
+    func updateUIViewController(_ uiViewController: ContentView, context: Context) {
+        // No update logic needed for preview
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView_Wrapper()
+    }
+}
+#endif

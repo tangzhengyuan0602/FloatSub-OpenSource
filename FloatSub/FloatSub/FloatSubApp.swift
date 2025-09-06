@@ -41,21 +41,24 @@ struct FloatSubApp: App {
     var body: some Scene {
         WindowGroup {
             // 4. 根据用户的同意状态，决定显示哪个视图
-            if hasAgreedToPrivacyPolicy {
+            ZStack {
                 ViewControllerRepresentable()
                     .onAppear {
                         // 如果用户已经同意过（例如，非首次启动），则直接初始化SDK
-                        appDelegate.initializeUmeng()
+                        if hasAgreedToPrivacyPolicy {
+                            appDelegate.initializeUmeng()
+                        }
                     }
-            } else {
-                // 如果是首次启动，显示我们刚创建的隐私政策视图
-                // 我们将同意状态和初始化函数传递给它
-                PrivacyPolicyView(
-                    hasAgreed: $hasAgreedToPrivacyPolicy,
-                    onAgree: {
-                        appDelegate.initializeUmeng()
-                    }
-                )
+
+                // Conditionally show the PrivacyPolicyView as an overlay.
+                if !hasAgreedToPrivacyPolicy {
+                    PrivacyPolicyView(
+                        hasAgreed: $hasAgreedToPrivacyPolicy,
+                        onAgree: {
+                            appDelegate.initializeUmeng()
+                        }
+                    )
+                }
             }
         }
     }
