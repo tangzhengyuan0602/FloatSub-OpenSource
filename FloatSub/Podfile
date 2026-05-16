@@ -1,16 +1,14 @@
-
 # 定义项目全局平台和版本
 platform :ios, '13.0'
 
+# 开源版本：移除了友盟统计等第三方依赖
+# 如需添加统计分析，可以添加自己的依赖配置
+
 target 'FloatSub' do
   use_frameworks!
-
-  pod 'UMCommon'
-  pod 'UMDevice'
-
-  #pod 'UMCCommonLog'
-
-  pod 'UMAPM'
+  
+  # 开源版本不包含任何第三方依赖
+  # 保持项目纯净，便于学习和使用
 end
 
 # === 添加这个脚本来统一所有库的部署目标版本 ===
