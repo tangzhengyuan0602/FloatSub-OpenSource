@@ -55,6 +55,13 @@ secrets.json
 credentials.json
 *.local
 
+# Large files - GitHub has 100MB limit
+*.mov
+*.mp4
+*.avi
+*.mkv
+*.flv
+
 # Logs
 *.log
 
