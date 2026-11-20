@@ -75,14 +75,16 @@ Here are three demo GIFs showing FloatSub in action:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/tangzhengyuan0602/FloatSub.git
-cd FloatSub
+git clone https://github.com/tangzhengyuan0602/FloatSub-OpenSource.git
+cd FloatSub-OpenSource/FloatSub
 ```
 
 2. Install dependencies:
 ```bash
 pod install
 ```
+The open-source version ships with **no third-party dependencies** in the Podfile;
+the step above only sets up the empty CocoaPods workspace.
 
 3. Open the workspace:
 ```bash
@@ -91,6 +93,18 @@ open FloatSub.xcworkspace
 
 4. Configure your team and bundle identifiers in Xcode
 5. Build and run the project
+
+## Permissions
+
+The app requires the following capabilities (configured in the target's
+`Signing & Capabilities` / `Info.plist`):
+
+- **Microphone** — live microphone input
+- **Speech Recognition** — on-device/online ASR via `SFSpeechRecognizer`
+- **Broadcast Extension (ReplayKit)** — capture system/app audio
+
+> Note: This open-source build does **not** include any analytics or tracking SDK.
+> Earlier internal builds bundled UMeng; that dependency has been removed here.
 
 ## Usage
 
@@ -135,13 +149,15 @@ FloatSub/
 │   │   ├── ContentView.swift  # Main UI
 │   │   ├── AudioRecognitionManager.swift  # Speech recognition
 │   │   └── UIPiPView.swift    # PiP implementation
-│   └── AudioCapture/          # Broadcast extension
-└── Pods/                      # Dependencies
+│   ├── AudioCapture/           # Broadcast extension (ReplayKit)
+│   └── app/                   # Multi-platform icon assets (iOS / Android / watch)
+├── 海报/                       # Posters and screenshots
+└── Podfile                    # CocoaPods manifest (no third-party pods)
 ```
 
 ## License
 
-This project is provided as-is for educational and personal use.
+Released under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
